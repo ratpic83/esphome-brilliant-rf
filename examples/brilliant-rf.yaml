@@ -1,0 +1,85 @@
+# Example: ESP32 + nRF24L01+ (PA/LNA) controlling two Brilliant RGB+CCT ceiling lamps.
+# Wiring: see README. First flash with `lamps:` empty, press keys on each remote and copy the
+# remote_id from the log ("Unknown remote, remote_id: [...]").
+
+esphome:
+  name: brilliant-rf
+  friendly_name: Brilliant RF
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf
+
+logger:
+  level: INFO
+
+api:
+  encryption:
+    key: !secret brilliant_rf_api_key
+  actions:
+    # Send any command, e.g. lamp: 0, command: 1 (on) - see docs/PROTOCOL.md
+    - action: send_command
+      variables:
+        lamp: int
+        command: int
+        p1: int
+        p2: int
+        p3: int
+        p4: int
+      then:
+        - lambda: id(rf).send(lamp, command, p1, p2, p3, p4);
+
+ota:
+  - platform: esphome
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+external_components:
+  - source: github://ratpic83/esphome-brilliant-rf
+    components: [brilliant_rf]
+
+spi:
+  clk_pin: GPIO18
+  miso_pin: GPIO19
+  mosi_pin: GPIO23
+
+brilliant_rf:
+  id: rf
+  cs_pin: GPIO5
+  ce_pin: GPIO4
+  lamps:
+    - remote_id: [0x10, 0x00, 0x12, 0x34, 0x31]  # lamp 0: living room (example id)
+    - remote_id: [0x10, 0x00, 0x56, 0x78, 0x31]  # lamp 1: bathroom (example id)
+
+light:
+  - platform: brilliant_rf
+    lamp: 0
+    type: white
+    name: "Living room white"
+    default_transition_length: 0s
+    gamma_correct: 1.0
+    restore_mode: RESTORE_DEFAULT_OFF
+  - platform: brilliant_rf
+    lamp: 0
+    type: rgb
+    name: "Living room ring"
+    default_transition_length: 0s
+    gamma_correct: 1.0
+    restore_mode: RESTORE_DEFAULT_OFF
+  - platform: brilliant_rf
+    lamp: 1
+    type: white
+    name: "Bathroom white"
+    default_transition_length: 0s
+    gamma_correct: 1.0
+    restore_mode: RESTORE_DEFAULT_OFF
+  - platform: brilliant_rf
+    lamp: 1
+    type: rgb
+    name: "Bathroom ring"
+    default_transition_length: 0s
+    gamma_correct: 1.0
+    restore_mode: RESTORE_DEFAULT_OFF
